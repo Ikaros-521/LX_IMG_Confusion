@@ -118,6 +118,15 @@ class TomatoImageConfusion {
         document.getElementById('restoreBtn').addEventListener('click', () => {
             this.restoreImage();
         });
+
+        // 控制参数事件监听
+        document.getElementById('confusionStrength').addEventListener('input', (e) => {
+            document.getElementById('confusionStrengthValue').textContent = e.target.value;
+        });
+
+        document.getElementById('blockSize').addEventListener('input', (e) => {
+            document.getElementById('blockSizeValue').textContent = e.target.value;
+        });
     }
 
     // 显示提示消息
@@ -347,7 +356,7 @@ class TomatoImageConfusion {
         this.showToast('已还原原始图片！', 'success');
     }
 
-    // 加密函数 - 基于Gilbert空间填充曲线
+    // 加密函数 - 基于Gilbert空间填充曲线（支持参数调节）
     encrypt(img) {
         try {
             // 检查图片尺寸是否有效
@@ -356,6 +365,9 @@ class TomatoImageConfusion {
                 this.displayImg.style.display = "inline-block";
                 return;
             }
+            
+            const confusionStrength = parseFloat(document.getElementById('confusionStrength').value);
+            const blockSize = parseInt(document.getElementById('blockSize').value);
             
             const cvs = document.createElement("canvas");
             const width = cvs.width = img.width;
@@ -367,27 +379,96 @@ class TomatoImageConfusion {
             ctx.fillRect(0, 0, width, height);
             
             ctx.drawImage(img, 0, 0);
-            const imgdata = ctx.getImageData(0, 0, width, height);
-            const imgdata2 = new ImageData(width, height);
-            const curve = gilbert2d(width, height);
-            const offset = Math.round((Math.sqrt(5) - 1) / 2 * width * height);
             
-            for (let i = 0; i < width * height; i++) {
-                const old_pos = curve[i];
-                const new_pos = curve[(i + offset) % (width * height)];
-                const old_p = 4 * (old_pos[0] + old_pos[1] * width);
-                const new_p = 4 * (new_pos[0] + new_pos[1] * width);
-                imgdata2.data.set(imgdata.data.slice(old_p, old_p + 4), new_p);
+            // 根据区块大小选择混淆方法
+            if (blockSize < 8) {
+                // 小区块：使用Gilbert曲线
+                this.applyGilbertConfusion(ctx, width, height, confusionStrength);
+            } else {
+                // 大区块：使用区块混淆（减少方块感）
+                this.applyBlockConfusion(ctx, width, height, blockSize, confusionStrength);
             }
             
-            ctx.putImageData(imgdata2, 0, 0);
             cvs.toBlob(b => {
                 this.setImageSrc(URL.createObjectURL(b));
-                this.showToast('图片混淆完成！', 'success');
+                this.showToast(`图片混淆完成！强度: ${confusionStrength}, 区块: ${blockSize}`, 'success');
             }, "image/jpeg", 0.95);
         } catch (error) {
             this.showToast('混淆失败：' + error.message, 'error');
             this.displayImg.style.display = "inline-block";
+        }
+    }
+
+    // Gilbert曲线混淆
+    applyGilbertConfusion(ctx, width, height, strength) {
+        const imgdata = ctx.getImageData(0, 0, width, height);
+        const imgdata2 = new ImageData(width, height);
+        const curve = gilbert2d(width, height);
+        const offset = Math.round((Math.sqrt(5) - 1) / 2 * width * height * strength);
+        
+        for (let i = 0; i < width * height; i++) {
+            const old_pos = curve[i];
+            const new_pos = curve[(i + offset) % (width * height)];
+            const old_p = 4 * (old_pos[0] + old_pos[1] * width);
+            const new_p = 4 * (new_pos[0] + new_pos[1] * width);
+            imgdata2.data.set(imgdata.data.slice(old_p, old_p + 4), new_p);
+        }
+        
+        ctx.putImageData(imgdata2, 0, 0);
+    }
+
+    // 区块混淆（减少方块感）
+    applyBlockConfusion(ctx, width, height, blockSize, strength) {
+        const imgdata = ctx.getImageData(0, 0, width, height);
+        const data = imgdata.data;
+        
+        // 按区块处理，但使用更平滑的算法
+        for (let y = 0; y < height; y += blockSize) {
+            for (let x = 0; x < width; x += blockSize) {
+                this.processBlockSmooth(data, x, y, Math.min(blockSize, width - x), Math.min(blockSize, height - y), width, strength);
+            }
+        }
+        
+        ctx.putImageData(imgdata, 0, 0);
+    }
+
+    // 平滑区块处理
+    processBlockSmooth(data, startX, startY, blockWidth, blockHeight, width, strength) {
+        // 计算区块中心
+        const centerX = startX + blockWidth / 2;
+        const centerY = startY + blockHeight / 2;
+        
+        // 创建临时数组存储原始数据
+        const originalData = new Uint8Array(blockWidth * blockHeight * 4);
+        
+        for (let dy = 0; dy < blockHeight; dy++) {
+            for (let dx = 0; dx < blockWidth; dx++) {
+                const index = ((startY + dy) * width + (startX + dx)) * 4;
+                const tempIndex = (dy * blockWidth + dx) * 4;
+                
+                originalData[tempIndex] = data[index];
+                originalData[tempIndex + 1] = data[index + 1];
+                originalData[tempIndex + 2] = data[index + 2];
+                originalData[tempIndex + 3] = data[index + 3];
+            }
+        }
+        
+        // 应用平滑混淆
+        for (let dy = 0; dy < blockHeight; dy++) {
+            for (let dx = 0; dx < blockWidth; dx++) {
+                const index = ((startY + dy) * width + (startX + dx)) * 4;
+                const tempIndex = (dy * blockWidth + dx) * 4;
+                
+                // 计算距离中心的距离，用于平滑过渡
+                const distance = Math.sqrt((dx - blockWidth/2) ** 2 + (dy - blockHeight/2) ** 2);
+                const maxDistance = Math.sqrt((blockWidth/2) ** 2 + (blockHeight/2) ** 2);
+                const smoothFactor = 1 - (distance / maxDistance) * strength;
+                
+                // 混合原始颜色和混淆颜色
+                data[index] = Math.floor(data[index] * smoothFactor + originalData[tempIndex] * (1 - smoothFactor));
+                data[index + 1] = Math.floor(data[index + 1] * smoothFactor + originalData[tempIndex + 1] * (1 - smoothFactor));
+                data[index + 2] = Math.floor(data[index + 2] * smoothFactor + originalData[tempIndex + 2] * (1 - smoothFactor));
+            }
         }
     }
 

@@ -130,21 +130,19 @@ class TomatoImageConfusion {
     }
 
     // 显示提示消息
-    showToast(message, type = 'info', duration = 3000) {
+    showToast(message, type = 'success', duration = 3000) {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
         const icons = {
             success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
+            error: '❌'
         };
         
         toast.innerHTML = `
             <div class="toast-content">
-                <span class="toast-icon">${icons[type] || icons.info}</span>
+                <span class="toast-icon">${icons[type] || icons.success}</span>
                 <span class="toast-message">${message}</span>
                 <button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>
             </div>
@@ -202,7 +200,7 @@ class TomatoImageConfusion {
             this.displayImg.src = src;
             this.displayImg.style.display = "inline-block";
         } catch (error) {
-            this.showToast('设置图片源失败：' + error.message, 'error');
+            this.showToast('设置图片源失败！', 'error');
             console.error('设置图片源错误:', error);
         }
     }
@@ -228,7 +226,7 @@ class TomatoImageConfusion {
 
         // 检查文件大小 (限制为10MB)
         if (file.size > 10 * 1024 * 1024) {
-            this.showToast('图片文件过大，请选择小于10MB的图片！', 'warning');
+            this.showToast('图片文件过大！', 'error');
             return;
         }
 
@@ -239,31 +237,31 @@ class TomatoImageConfusion {
         img.crossOrigin = 'anonymous';
         
         // 设置超时处理
-        const timeoutId = setTimeout(() => {
-            this.showToast('图片加载超时！请尝试较小的图片文件。', 'error');
-            img.onload = null; // 防止后续加载完成触发
-        }, 10000); // 10秒超时
-        
-        img.onload = () => {
-            clearTimeout(timeoutId); // 清除超时计时器
+            const timeoutId = setTimeout(() => {
+                this.showToast('图片加载超时！', 'error');
+                img.onload = null; // 防止后续加载完成触发
+            }, 10000); // 10秒超时
             
-            // 验证图片尺寸是否有效
-            if (!img.width || !img.height || img.width === 0 || img.height === 0) {
-                this.showToast('图片尺寸无效，可能是损坏的图片文件！', 'error');
-                return;
-            }
-            
-            // 尝试使用简单方法直接显示图片
-            try {
-                this.originalImage = img;
-                // 直接使用createObjectURL创建的URL设置图片源
-                const imageUrl = URL.createObjectURL(file);
-                this.displayImg.onload = () => {
-                    this.updateImageInfo(file, img.width, img.height);
-                    this.showToast(`图片加载成功！格式: ${file.type.split('/')[1].toUpperCase()}，尺寸: ${img.width}×${img.height}`, 'success');
-                };
+            img.onload = () => {
+                clearTimeout(timeoutId); // 清除超时计时器
+                
+                // 验证图片尺寸是否有效
+                if (!img.width || !img.height || img.width === 0 || img.height === 0) {
+                    this.showToast('图片尺寸无效！', 'error');
+                    return;
+                }
+                
+                // 尝试使用简单方法直接显示图片
+                try {
+                    this.originalImage = img;
+                    // 直接使用createObjectURL创建的URL设置图片源
+                    const imageUrl = URL.createObjectURL(file);
+                    this.displayImg.onload = () => {
+                        this.updateImageInfo(file, img.width, img.height);
+                        this.showToast('图片加载成功！', 'success');
+                    };
                 this.displayImg.onerror = (err) => {
-                    this.showToast('图片显示失败！请尝试其他图片文件。', 'error');
+                    this.showToast('图片显示失败！', 'error');
                     console.error('图片显示错误:', err);
                 };
                 this.displayImg.src = imageUrl;
@@ -277,12 +275,8 @@ class TomatoImageConfusion {
             clearTimeout(timeoutId); // 清除超时计时器
             
             // 提供更具体的错误信息
-            const errorMsg = `图片加载失败！可能原因：文件损坏、格式不支持。文件类型：${file.type}`;
-            this.showToast(errorMsg, 'error');
+            this.showToast('图片加载失败！', 'error');
             console.error('图片加载错误:', err);
-            
-            // 简化错误处理，不再尝试复杂修复
-            this.showToast('图片加载失败，请尝试其他图片或使用"转JPG"功能', 'error');
         };
         
         try {
@@ -291,7 +285,7 @@ class TomatoImageConfusion {
             img.src = blobUrl;
         } catch (error) {
             clearTimeout(timeoutId);
-            this.showToast('创建图片URL失败：' + error.message, 'error');
+            this.showToast('创建图片URL失败！', 'error');
             console.error('URL创建错误:', error);
         }
     }
@@ -299,11 +293,10 @@ class TomatoImageConfusion {
     // 混淆图片 - 基于Gilbert空间填充曲线
     confuseImage() {
         if (!this.displayImg.src) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
-        this.showToast('正在混淆图片...', 'info');
         this.displayImg.style.display = "none";
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -315,11 +308,10 @@ class TomatoImageConfusion {
     // 解混淆图片
     deconfuseImage() {
         if (!this.displayImg.src) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
-        this.showToast('正在解混淆图片...', 'info');
         this.displayImg.style.display = "none";
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -331,11 +323,10 @@ class TomatoImageConfusion {
     // 反相图片
     invertImage() {
         if (!this.displayImg.src) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
-        this.showToast('正在反相图片...', 'info');
         this.displayImg.style.display = "none";
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -347,7 +338,7 @@ class TomatoImageConfusion {
     // 还原原始图片
     restoreImage() {
         if (!this.currentFile) {
-            this.showToast('没有原始图片可还原！', 'warning');
+            this.showToast('没有原始图片可还原！', 'error');
             return;
         }
 
@@ -361,7 +352,7 @@ class TomatoImageConfusion {
         try {
             // 检查图片尺寸是否有效
             if (!img.width || !img.height || img.width === 0 || img.height === 0) {
-                this.showToast('处理失败：图片尺寸无效！', 'error');
+                this.showToast('处理失败！', 'error');
                 this.displayImg.style.display = "inline-block";
                 return;
             }
@@ -391,10 +382,10 @@ class TomatoImageConfusion {
             
             cvs.toBlob(b => {
                 this.setImageSrc(URL.createObjectURL(b));
-                this.showToast(`图片混淆完成！强度: ${confusionStrength}, 区块: ${blockSize}`, 'success');
+                this.showToast('图片混淆完成！', 'success');
             }, "image/jpeg", 0.95);
         } catch (error) {
-            this.showToast('混淆失败：' + error.message, 'error');
+            this.showToast('混淆失败！', 'error');
             this.displayImg.style.display = "inline-block";
         }
     }
@@ -477,7 +468,7 @@ class TomatoImageConfusion {
         try {
             // 检查图片尺寸是否有效
             if (!img.width || !img.height || img.width === 0 || img.height === 0) {
-                this.showToast('处理失败：图片尺寸无效！', 'error');
+                this.showToast('处理失败！', 'error');
                 this.displayImg.style.display = "inline-block";
                 return;
             }
@@ -511,7 +502,7 @@ class TomatoImageConfusion {
                 this.showToast('图片解混淆完成！', 'success');
             }, "image/jpeg", 0.95);
         } catch (error) {
-            this.showToast('解混淆失败：' + error.message, 'error');
+            this.showToast('解混淆失败！', 'error');
             this.displayImg.style.display = "inline-block";
         }
     }
@@ -519,11 +510,10 @@ class TomatoImageConfusion {
     // PNG转JPG函数
     convertToJPG() {
         if (!this.displayImg.src) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
-        this.showToast('正在将图片转换为JPG格式...', 'info');
         this.displayImg.style.display = "none";
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -537,7 +527,7 @@ class TomatoImageConfusion {
         try {
             // 检查图片尺寸是否有效
             if (!img.width || !img.height || img.width === 0 || img.height === 0) {
-                this.showToast('处理失败：图片尺寸无效！', 'error');
+                this.showToast('处理失败！', 'error');
                 this.displayImg.style.display = "inline-block";
                 return;
             }
@@ -559,7 +549,7 @@ class TomatoImageConfusion {
                 this.showToast('图片已成功转换为JPG格式！', 'success');
             }, "image/jpeg", 0.95);
         } catch (error) {
-            this.showToast('转换失败：' + error.message, 'error');
+            this.showToast('转换失败！', 'error');
             this.displayImg.style.display = "inline-block";
         }
     }
@@ -569,7 +559,7 @@ class TomatoImageConfusion {
         try {
             // 检查图片尺寸是否有效
             if (!img.width || !img.height || img.width === 0 || img.height === 0) {
-                this.showToast('处理失败：图片尺寸无效！', 'error');
+                this.showToast('处理失败！', 'error');
                 this.displayImg.style.display = "inline-block";
                 return;
             }
@@ -601,14 +591,13 @@ class TomatoImageConfusion {
                 this.showToast('图片反相完成！', 'success');
             }, "image/jpeg", 0.95);
         } catch (error) {
-            this.showToast('反相失败：' + error.message, 'error');
+            this.showToast('反相失败！', 'error');
             this.displayImg.style.display = "inline-block";
         }
     }
 
     // 尝试修复图片
     attemptImageRepair(file) {
-        this.showToast('正在尝试修复图片...', 'info');
         console.log('开始修复图片，文件信息:', {
             name: file.name,
             size: file.size,
@@ -629,7 +618,6 @@ class TomatoImageConfusion {
         };
         reader.onerror = (error) => {
             console.error('FileReader读取失败:', error);
-            this.showToast('文件读取失败，尝试其他方法...', 'warning');
             this.tryBlobRepair(file);
         };
         reader.readAsDataURL(file);
@@ -685,7 +673,6 @@ class TomatoImageConfusion {
                     console.log('期望文件头:', pngHeader.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
                     
                     // 不要直接返回，尝试其他方法
-                    this.showToast('PNG文件头异常，但尝试继续处理...', 'warning');
                     this.tryPngHeaderRepair(uint8Array, file);
                     return;
                 }
@@ -694,11 +681,11 @@ class TomatoImageConfusion {
                 this.tryPngHeaderRepair(uint8Array, file);
             } catch (error) {
                 console.error('ArrayBuffer处理失败:', error);
-                this.showToast('图片修复失败：文件可能严重损坏', 'error');
+                this.showToast('图片修复失败！', 'error');
             }
         };
         reader.onerror = () => {
-            this.showToast('无法读取文件数据', 'error');
+            this.showToast('图片修复失败！', 'error');
         };
         reader.readAsArrayBuffer(file);
     }
@@ -731,8 +718,6 @@ class TomatoImageConfusion {
     // 方法6: 宽松模式加载（忽略文件头检查）
     tryLooseModeLoad(file) {
         console.log('尝试宽松模式加载');
-        this.showToast('尝试宽松模式加载图片...', 'info');
-        
         // 直接使用原始文件，不进行任何检查
         const url = URL.createObjectURL(file);
         const img = new Image();
@@ -748,13 +733,13 @@ class TomatoImageConfusion {
             this.originalImage = img;
             this.setImageSrc(url);
             this.updateImageInfo(file, img.width, img.height);
-            this.showToast('图片加载成功！（宽松模式）', 'success');
+            this.showToast('图片加载成功！', 'success');
         };
         
         img.onerror = (error) => {
             clearTimeout(timeoutId);
             console.error('宽松模式也失败:', error);
-            this.showToast('所有方法都失败了，文件可能严重损坏', 'error');
+            this.showToast('所有方法都失败了！', 'error');
         };
         
         img.src = url;
@@ -763,7 +748,6 @@ class TomatoImageConfusion {
     // 方法5: 强制转换为JPG
     forceConvertToJPG(file) {
         console.log('尝试强制转换为JPG');
-        this.showToast('尝试强制转换为JPG格式...', 'info');
         
         // 使用Canvas强制绘制
         const canvas = document.createElement('canvas');
@@ -836,14 +820,14 @@ class TomatoImageConfusion {
                     this.originalImage = img;
                     this.setImageSrc(URL.createObjectURL(blob));
                     this.updateImageInfo(repairedFile, img.width, img.height);
-                    this.showToast('图片修复成功！已转换为JPG格式', 'success');
+                    this.showToast('图片修复成功！', 'success');
                 } else {
-                    this.showToast('图片修复失败，请尝试其他图片', 'error');
+                    this.showToast('图片修复失败！', 'error');
                 }
             }, 'image/jpeg', 0.9);
         } catch (error) {
             console.error('处理修复图片时出错:', error);
-            this.showToast('图片修复失败：' + error.message, 'error');
+            this.showToast('图片修复失败！', 'error');
         }
     }
 
@@ -857,18 +841,14 @@ class TomatoImageConfusion {
         
         // 检查文件大小
         if (file.size === 0) {
-            this.showToast('文件大小为0，文件可能损坏！', 'error');
+            this.showToast('文件大小为0！', 'error');
             return;
-        }
-        
-        if (file.size < 100) {
-            this.showToast('文件太小，可能不是有效的图片文件！', 'warning');
         }
         
         // 检查MIME类型
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/bmp'];
         if (!validTypes.includes(file.type)) {
-            this.showToast(`文件类型 ${file.type} 可能不被支持！`, 'warning');
+            this.showToast('文件类型不被支持！', 'error');
         }
         
         // 检查PNG文件头
@@ -905,7 +885,7 @@ class TomatoImageConfusion {
             
             if (!isValidPng) {
                 console.error('PNG文件头无效！');
-                this.showToast('PNG文件头无效，文件可能损坏！', 'error');
+                this.showToast('PNG文件头无效！', 'error');
             } else {
                 console.log('PNG文件头有效');
             }
@@ -924,7 +904,7 @@ class TomatoImageConfusion {
             
             if (!hasValidEnd) {
                 console.warn('PNG文件可能不完整（缺少IEND块）');
-                this.showToast('PNG文件可能不完整，尝试修复...', 'warning');
+                // 不再显示提示
             }
         };
         reader.readAsArrayBuffer(file.slice(0, 100)); // 只读取前100字节
@@ -933,7 +913,7 @@ class TomatoImageConfusion {
     // 转换为JPG格式
     convertToJPG() {
         if (!this.displayImg.src) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
@@ -963,18 +943,17 @@ class TomatoImageConfusion {
                 }
             }, 'image/jpeg', 0.95);
         } catch (error) {
-            this.showToast('转换失败：' + error.message, 'error');
+            this.showToast('转换失败！', 'error');
         }
     }
 
     // 修复PNG文件头
     fixPngHeader(file) {
         if (!file) {
-            this.showToast('请先选择一张图片！', 'warning');
+            this.showToast('请先选择一张图片！', 'error');
             return;
         }
 
-        this.showToast('正在修复PNG文件头...', 'info');
         console.log('开始修复PNG文件头');
         
         const reader = new FileReader();
@@ -1052,18 +1031,17 @@ class TomatoImageConfusion {
                 };
                 img.onerror = (error) => {
                     console.error('修复后文件仍无法加载:', error);
-                    this.showToast('文件头修复失败，尝试其他方法...', 'warning');
                     this.tryAlternativePngFix(uint8Array, file);
                 };
                 img.src = URL.createObjectURL(fixedBlob);
                 
             } catch (error) {
                 console.error('PNG文件头修复失败:', error);
-                this.showToast('文件头修复失败：' + error.message, 'error');
+                this.showToast('文件头修复失败！', 'error');
             }
         };
         reader.onerror = () => {
-            this.showToast('无法读取文件数据', 'error');
+            this.showToast('文件读取失败！', 'error');
         };
         reader.readAsArrayBuffer(file);
     }
@@ -1071,7 +1049,6 @@ class TomatoImageConfusion {
     // 尝试其他PNG修复方法
     tryAlternativePngFix(uint8Array, file) {
         console.log('尝试其他PNG修复方法');
-        this.showToast('尝试其他修复方法...', 'info');
         
         try {
             // 方法1: 直接添加PNG头部
@@ -1098,7 +1075,7 @@ class TomatoImageConfusion {
                 this.originalImage = img;
                 this.setImageSrc(URL.createObjectURL(fixedBlob));
                 this.updateImageInfo(fixedFile, img.width, img.height);
-                this.showToast('PNG文件修复成功！（替代方法）', 'success');
+                this.showToast('PNG文件修复成功！', 'success');
             };
             img.onerror = () => {
                 console.log('替代方法也失败，尝试转换为JPG');
@@ -1108,7 +1085,7 @@ class TomatoImageConfusion {
             
         } catch (error) {
             console.error('替代修复方法失败:', error);
-            this.showToast('所有修复方法都失败了', 'error');
+            this.showToast('所有修复方法都失败了！', 'error');
         }
     }
 

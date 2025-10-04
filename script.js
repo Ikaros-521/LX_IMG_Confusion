@@ -258,7 +258,7 @@ class TomatoImageConfusion {
                     const imageUrl = URL.createObjectURL(file);
                     this.displayImg.onload = () => {
                         this.updateImageInfo(file, img.width, img.height);
-                        this.showToast('图片加载成功！', 'success');
+                        // this.showToast('图片加载成功！', 'success');
                     };
                 this.displayImg.onerror = (err) => {
                     this.showToast('图片显示失败！', 'error');
@@ -658,7 +658,7 @@ class TomatoImageConfusion {
             this.originalImage = img;
             this.setImageSrc(url);
             this.updateImageInfo(file, img.width, img.height);
-            this.showToast('图片加载成功！', 'success');
+            // this.showToast('图片加载成功！', 'success');
         };
         
         img.onerror = (error) => {

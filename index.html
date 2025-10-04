@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片混淆</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>图片混淆</h1>
+            <p>基于空间填充曲线的新一代图片混淆。混淆算法保持像素的空间相关性，混淆图被压缩仍能保持色彩。仅供技术交流使用。此程序生成的图片格式为jpeg，质量0.95。</p>
+            <div class="tech-info">
+                <span class="tech-tag">Gilbert空间填充曲线</span>
+                <span class="tech-tag">像素重排</span>
+                <span class="tech-tag">空间相关性保持</span>
+                <span class="tech-tag">JPEG 0.95质量</span>
+            </div>
+        </header>
+
+        <div class="button-section">
+            <div class="button-group">
+                <button id="selectBtn" class="normal_button" style="background-color: #180161;color:#fff;">
+                    📁 选择图片
+                    <input type="file" id="imageInput" accept="image/*" class="ipt_btn">
+                </button>
+                <button id="confuseBtn" class="normal_button" style="background-color: #4f1787;color:#fff;">🔀 混淆</button>
+                <button id="deconfuseBtn" class="normal_button" style="background-color: #eb3678;color:#fff;">🔓 解混淆</button>
+                <button id="invertBtn" class="normal_button" style="background-color: #ff6b35;color:#fff;">🔄 反相</button>
+                <button id="restoreBtn" class="normal_button" style="background-color: #fb773c;color:#fff;">↩️ 还原</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="preview-section">
+                <img id="displayImg" style="max-width: 100%; max-height: calc(100vh - 200px); display: none;" />
+            </div>
+            
+            <div class="info-section">
+                <div class="image-info" id="imageInfo" style="display: none;">
+                    <div class="info-card">
+                        <h3>📊 图片信息</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="label">尺寸:</span>
+                                <span id="imageSize">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">文件大小:</span>
+                                <span id="fileSize">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">格式:</span>
+                                <span id="imageFormat">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">状态:</span>
+                                <span id="imageStatus">未处理</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示消息框 -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
